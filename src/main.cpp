@@ -29,8 +29,9 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 const char *ssid = "ESP32AP";
 const char *password = "devkit1234"; //"EFC5F27D674F";
 
-const int LED = 2; //La PIN GPIO de la LED
+const int LED = 2;        //La PIN GPIO de la LED
 const int oneWireBus = 4; // La pin GPIO de connexion
+bool ok;                  //flag de verif pour le range de température
 
 // Initialisation d'une instance onewire
 OneWire oneWire(oneWireBus);
@@ -209,8 +210,6 @@ float demanderTemperature()
 // Fonction qui permet d'afficher les informations sur l'OLED
 void afficherOLED()
 {
-  float temperatureCourante = demanderTemperature();
-
   display.clearDisplay();
   display.setTextSize(1);
   display.setTextColor(WHITE);
@@ -221,12 +220,12 @@ void afficherOLED()
   display.setCursor(0, 20);
   // Display static text
   display.print("Temp. actuel : ");
-  display.println(temperatureCourante);
-  if (temperatureCourante > getTempMax())
+  display.println(demanderTemperature());
+  if (demanderTemperature() > getTempMax())
   {
     display.setCursor(35, 45);
-    //display.print("WARNING!!!");
-    display.drawBitmap(0, 0, myBitmap, 128, 64, WHITE);
+    display.print("WARNING!!!");
+    //display.drawBitmap(0, 0, myBitmap, 128, 64, WHITE);
   }
   display.display();
 }
@@ -234,35 +233,41 @@ void afficherOLED()
 // Vérifie si la température est dans le range permis : IF TRUE; LED: OFF ELSE; LED ON
 void verifierTemperature()
 {
-  while (demanderTemperature() > getTempMax())
+  if (demanderTemperature() <= getTempMax() - 1)
+  {
+    ok = true;
+  }
+
+  if (demanderTemperature() <= getTempMax() && ok)
   {
     digitalWrite(LED, HIGH);
-    delay(300);
-    digitalWrite(LED, LOW);
-    Serial.print("Celsius temperature: ");
-    Serial.println(demanderTemperature());
-    if (getTempMax() < demanderTemperature())
-      break;
-    delay(700);
   }
-  // if (demanderTemperature() > getTempMax())
+  else
+  {
+    digitalWrite(LED, LOW);
+    ok = false;
+  }
+
+  // while (demanderTemperature() > getTempMax())
   // {
   //   digitalWrite(LED, HIGH);
-  // }
-  // else
-  // {
+  //   delay(300);
   //   digitalWrite(LED, LOW);
-  // }
+  //   delay(700);
+  //   afficherOLED();
+  //   Serial.print("Celsius temperature: ");
+  //   Serial.println(demanderTemperature());
+  // }   
 }
 
 // Permet de factory reset les paramètres de l'ESP32
-void resetSetting()
-{
-  Serial.println("Suppression des reglages et redemarrage...");
-  wm.resetSettings();
-  ESP.restart();
-  delay(30000);
-}
+// void resetSetting()
+// {
+//   Serial.println("Suppression des reglages et redemarrage...");
+//   wm.resetSettings();
+//   ESP.restart();
+//   delay(30000);
+// }
 
 void setup()
 {
